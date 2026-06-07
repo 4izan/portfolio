@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio — 3D Artist</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Tenor+Sans&family=Montserrat:wght@200;300;400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+/* ═══ VARIABLES ═══ */
+:root {
+  --bg:#060608; --bg2:#0b0b0f; --surface:#0f0f14; --surface2:#161620; --surface3:#1c1c28;
+  --gold:#c9a84c; --gold-light:#e8cc7a; --gold-dim:rgba(201,168,76,.25);
+  --emerald:#2d7a5f; --emerald-bright:#3d9a77;
+  --red:#8b3a3a; --red-bright:#c05050;
+  --text:#f0ede6; --text-dim:#7a7568; --text-mid:#b8b2a6;
+  --border:rgba(201,168,76,.15); --border-soft:rgba(240,237,230,.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Montserrat',sans-serif;font-weight:300;overflow-x:hidden;cursor:none}
+.cursor-dot{position:fixed;top:0;left:0;z-index:9999;width:8px;height:8px;background:var(--gold);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%)}
+.cursor-circle{position:fixed;top:0;left:0;z-index:9998;width:32px;height:32px;border:1px solid var(--gold);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);opacity:.5}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 80% 60% at 20% 0%,rgba(201,168,76,.04) 0%,transparent 60%),radial-gradient(ellipse 60% 80% at 80% 100%,rgba(26,74,58,.12) 0%,transparent 60%)}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 4px,rgba(201,168,76,.012) 4px,rgba(201,168,76,.012) 5px)}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:28px 60px;background:linear-gradient(to bottom,rgba(6,6,8,.98) 0%,transparent 100%)}
+.nav-logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;letter-spacing:8px;text-transform:uppercase;color:var(--text)}
+.nav-logo em{color:var(--gold);font-style:normal}
+.nav-links{display:flex;gap:40px;list-style:none;align-items:center}
+.nav-links a{font-size:9px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:var(--text-dim);text-decoration:none;transition:color .3s}
+.nav-links a:hover{color:var(--gold)}
+
+/* HERO */
+#hero{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:0 60px 100px;overflow:hidden}
+.deco-corner{position:absolute;top:80px;right:60px;width:180px;height:180px;opacity:.2;pointer-events:none}
+.deco-corner svg{width:100%;height:100%}
+.hero-number{font-family:'Cormorant Garamond',serif;font-size:240px;font-weight:300;color:transparent;-webkit-text-stroke:1px rgba(201,168,76,.08);position:absolute;right:40px;bottom:-20px;line-height:1;pointer-events:none;z-index:-1;user-select:none}
+.hero-rule{width:60px;height:1px;background:var(--gold);margin-bottom:28px;opacity:0;animation:fadeIn 1s .3s ease forwards}
+.hero-eyebrow{font-size:9px;letter-spacing:6px;text-transform:uppercase;color:var(--gold);font-weight:300;margin-bottom:20px;opacity:0;animation:fadeIn 1s .5s ease forwards}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(64px,9vw,128px);font-weight:300;line-height:.92;letter-spacing:-1px;color:var(--text);opacity:0;animation:fadeUp 1s .7s ease forwards}
+.hero-title .italic{font-style:italic;color:var(--gold-light)}
+.hero-title .outline{-webkit-text-stroke:1px rgba(240,237,230,.3);color:transparent}
+.hero-sub{max-width:380px;margin-top:28px;font-size:12px;font-weight:300;line-height:2;letter-spacing:1px;color:var(--text-dim);opacity:0;animation:fadeIn 1s 1s ease forwards}
+.hero-cta{margin-top:48px;display:flex;gap:20px;align-items:center;opacity:0;animation:fadeIn 1s 1.2s ease forwards}
+.btn-gold{display:inline-flex;align-items:center;gap:12px;padding:14px 40px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:4px;text-transform:uppercase;text-decoration:none;cursor:none;transition:background .3s,color .3s}
+.btn-gold:hover,.btn-gold:focus{background:var(--gold);color:var(--bg)}
+.btn-ghost-link{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);text-decoration:none;cursor:none;transition:color .3s}
+.btn-ghost-link:hover{color:var(--text)}
+.hero-scroll-line{position:absolute;bottom:0;left:60px;width:1px;height:80px;background:linear-gradient(to bottom,var(--gold),transparent);opacity:.5;animation:scrollBob 3s ease-in-out infinite}
+
+/* DIVIDER */
+.ornate-divider{position:relative;z-index:2;display:flex;align-items:center;gap:20px;padding:0 60px}
+.ornate-divider::before,.ornate-divider::after{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,var(--border),transparent)}
+.ornate-divider .diamond{width:8px;height:8px;background:var(--gold);transform:rotate(45deg);opacity:.6}
+
+/* SECTIONS */
+.section-label{font-size:9px;letter-spacing:6px;text-transform:uppercase;color:var(--gold);font-weight:300;margin-bottom:12px}
+.section-title{font-family:'Cormorant Garamond',serif;font-size:clamp(44px,6vw,80px);font-weight:300;line-height:1;color:var(--text)}
+.section-title em{font-style:italic;color:var(--gold-light)}
+
+/* WORK */
+#work{position:relative;z-index:2;padding:100px 60px}
+.work-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:60px}
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:48px}
+.filter-btn{padding:7px 20px;background:transparent;border:1px solid var(--border-soft);color:var(--text-dim);font-size:8px;letter-spacing:3px;text-transform:uppercase;font-weight:300;cursor:none;transition:all .3s}
+.filter-btn:hover,.filter-btn.active{border-color:var(--gold);color:var(--gold)}
+.projects-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:2px}
+.project-card{position:relative;overflow:hidden;cursor:none;grid-column:span 4;aspect-ratio:3/4;background:var(--surface)}
+.project-card.wide{grid-column:span 8;aspect-ratio:16/9}
+.project-card.tall{grid-column:span 4;aspect-ratio:2/3}
+.project-card .thumb{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.7) saturate(.8);transform:scale(1.02);transition:transform .8s ease,filter .5s ease}
+.project-card:hover .thumb{transform:scale(1.08);filter:brightness(.9) saturate(1)}
+.fbx-thumb-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:radial-gradient(ellipse at center,#0d1a14 0%,var(--surface2) 100%)}
+.fbx-thumb-placeholder .fbx-icon{font-size:44px;opacity:.25}
+.fbx-thumb-placeholder .fbx-name{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)}
+.fbx-badge{position:absolute;top:12px;left:12px;z-index:4;padding:4px 10px;background:rgba(6,6,8,.85);border:1px solid var(--emerald-bright);color:#6ecfb0;font-size:8px;letter-spacing:3px;text-transform:uppercase;backdrop-filter:blur(4px)}
+.thumb-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--surface2)}
+.placeholder-icon{font-size:40px;opacity:.12}
+.placeholder-label{font-family:'Tenor Sans',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)}
+.project-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(6,6,8,.97) 0%,rgba(6,6,8,.5) 40%,transparent 70%);display:flex;flex-direction:column;justify-content:flex-end;padding:28px 24px;opacity:0;transition:opacity .4s ease}
+.project-card:hover .project-overlay{opacity:1}
+.project-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,var(--gold),var(--emerald-bright),transparent);transform:scaleX(0);transform-origin:left;transition:transform .5s ease}
+.project-card:hover::after{transform:scaleX(1)}
+.proj-cat{font-size:8px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;font-weight:300}
+.proj-name{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;line-height:1.1;color:var(--text);margin-bottom:8px}
+.proj-desc{font-size:11px;color:var(--text-dim);line-height:1.6;margin-bottom:16px}
+.proj-actions{display:flex;gap:8px;flex-wrap:wrap}
+.proj-btn{padding:6px 16px;border:1px solid rgba(201,168,76,.3);background:transparent;color:var(--gold);font-size:8px;letter-spacing:2px;text-transform:uppercase;cursor:none;transition:all .2s}
+.proj-btn:hover{background:var(--gold);color:var(--bg)}
+.proj-btn.fbx3d{border-color:rgba(45,122,95,.5);color:#6ecfb0}
+.proj-btn.fbx3d:hover{background:var(--emerald-bright);border-color:var(--emerald-bright);color:#fff}
+.empty-state{grid-column:1/-1;padding:100px 40px;text-align:center;border:1px solid var(--border-soft)}
+.empty-icon{font-size:56px;opacity:.08;margin-bottom:20px}
+.empty-text{font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--text-dim)}
+
+/* ABOUT */
+#about{position:relative;z-index:2;padding:100px 60px}
+.about-layout{display:grid;grid-template-columns:5fr 7fr;gap:100px;align-items:start}
+.about-frame{position:relative;aspect-ratio:3/4;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:72px;color:rgba(201,168,76,.08);overflow:hidden}
+.about-frame img{width:100%;height:100%;object-fit:cover;display:none}
+.about-frame img.visible{display:block}
+.about-frame::before,.about-frame::after{content:'';position:absolute;width:30px;height:30px;border-color:var(--gold);border-style:solid;opacity:.5}
+.about-frame::before{top:12px;left:12px;border-width:1px 0 0 1px}
+.about-frame::after{bottom:12px;right:12px;border-width:0 1px 1px 0}
+.about-bio{font-size:15px;line-height:2;color:var(--text-mid);margin:28px 0 40px}
+.about-bio em{font-style:italic;color:var(--text);font-family:'Cormorant Garamond',serif;font-size:17px}
+.skills-wrap{display:flex;flex-wrap:wrap;gap:8px}
+.skill-chip{padding:6px 16px;border:1px solid var(--border-soft);font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);transition:all .3s}
+.skill-chip:hover{border-color:var(--emerald-bright);color:#6ecfb0}
+
+/* CONTACT */
+#contact{position:relative;z-index:2;padding:100px 60px 80px;text-align:center}
+.contact-eyebrow{font-size:9px;letter-spacing:6px;text-transform:uppercase;color:var(--gold);margin-bottom:24px;display:block}
+.contact-headline{font-family:'Cormorant Garamond',serif;font-size:clamp(56px,9vw,120px);font-weight:300;line-height:.9;color:var(--text);margin-bottom:48px}
+.contact-headline em{font-style:italic;color:var(--gold-light);display:block}
+.contact-email-link{display:inline-block;font-family:'Tenor Sans',sans-serif;font-size:clamp(18px,3vw,32px);letter-spacing:2px;color:var(--text-mid);text-decoration:none;border-bottom:1px solid var(--border);padding-bottom:8px;transition:color .3s,border-color .3s;margin-bottom:60px}
+.contact-email-link:hover{color:var(--gold);border-color:var(--gold)}
+.social-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.social-a{padding:10px 28px;border:1px solid var(--border-soft);font-size:8px;letter-spacing:4px;text-transform:uppercase;color:var(--text-dim);text-decoration:none;transition:all .3s}
+.social-a:hover{border-color:var(--gold);color:var(--gold)}
+
+/* FOOTER */
+footer{position:relative;z-index:2;padding:28px 60px;border-top:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between}
+.footer-text{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)}
+.footer-diamond{width:6px;height:6px;background:var(--gold);transform:rotate(45deg);opacity:.4}
+
+/* MODALS (viewer + image) */
+.modal-backdrop{position:fixed;inset:0;background:rgba(6,6,8,.93);backdrop-filter:blur(12px);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.modal-backdrop.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border);width:560px;max-width:92vw;max-height:90vh;overflow-y:auto;padding:48px;position:relative;transform:translateY(16px);transition:transform .3s}
+.modal::before,.modal::after{content:'';position:absolute;width:24px;height:24px;border-color:var(--gold);border-style:solid;opacity:.4}
+.modal::before{top:16px;left:16px;border-width:1px 0 0 1px}
+.modal::after{bottom:16px;right:16px;border-width:0 1px 1px 0}
+.modal-backdrop.open .modal{transform:translateY(0)}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;letter-spacing:2px;color:var(--text);margin-bottom:36px}
+.modal-title em{color:var(--gold);font-style:italic}
+.modal-close{position:absolute;top:20px;right:24px;background:none;border:none;color:var(--text-dim);font-size:18px;cursor:none;transition:color .2s;font-family:'Cormorant Garamond',serif}
+.modal-close:hover{color:var(--gold)}
+
+/* 3D VIEWER */
+#viewerModal .modal{width:880px;max-width:95vw;padding:0;background:#04060a;overflow:hidden}
+#viewerModal .modal::before,#viewerModal .modal::after{z-index:5;pointer-events:none}
+#viewerModal .modal-close{position:absolute;top:16px;right:20px;z-index:10;color:var(--text-mid);font-size:20px}
+.viewer-header{display:flex;align-items:center;justify-content:space-between;padding:20px 28px 0;position:relative;z-index:5}
+.viewer-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;letter-spacing:2px;color:var(--text)}
+.viewer-title em{color:var(--gold);font-style:italic}
+.viewer-badge{padding:4px 12px;border:1px solid var(--emerald-bright);font-size:8px;letter-spacing:3px;text-transform:uppercase;color:#6ecfb0}
+#threejsCanvas{width:100%;height:480px;display:block;background:#0e0e12}
+.viewer-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:16px 28px 24px;border-top:1px solid var(--border-soft)}
+.ctrl-btn{padding:7px 18px;border:1px solid var(--border-soft);background:transparent;color:var(--text-dim);font-size:8px;letter-spacing:2px;text-transform:uppercase;cursor:none;transition:all .2s}
+.ctrl-btn:hover,.ctrl-btn.active{border-color:var(--gold);color:var(--gold)}
+.ctrl-btn.emerald{border-color:rgba(45,122,95,.4);color:#6ecfb0}
+.ctrl-btn.emerald:hover{background:var(--emerald-bright);color:#fff;border-color:var(--emerald-bright)}
+.viewer-hint{margin-left:auto;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);opacity:.6}
+.viewer-loading{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#04060a;transition:opacity .5s}
+.viewer-loading.hidden{opacity:0;pointer-events:none}
+.loader-ring{width:56px;height:56px;border:1px solid var(--border-soft);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite}
+.loader-text{font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--text-dim)}
+
+/* TOAST */
+.toast{position:fixed;bottom:40px;right:44px;background:var(--surface);border:1px solid var(--gold);border-left:3px solid var(--gold);padding:14px 22px;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);z-index:9000;transform:translateX(130%);transition:transform .4s cubic-bezier(.16,1,.3,1)}
+.toast.show{transform:translateX(0)}
+
+/* ═══════════════════════════════════════
+   ADMIN PANEL (hidden overlay)
+═══════════════════════════════════════ */
+#adminPanel{position:fixed;inset:0;z-index:5000;background:var(--bg);display:none;overflow:hidden}
+#adminPanel.open{display:flex}
+
+/* Admin sidebar */
+.adm-sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border-soft);display:flex;flex-direction:column;flex-shrink:0}
+.adm-logo{padding:28px 24px 20px;border-bottom:1px solid var(--border-soft)}
+.adm-logo .al-text{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:300;letter-spacing:6px;text-transform:uppercase;color:var(--text)}
+.adm-logo .al-text em{color:var(--gold);font-style:normal}
+.adm-logo .al-sub{font-size:7px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-top:5px}
+.adm-nav{flex:1;padding:16px 0}
+.adm-sec{font-size:7px;letter-spacing:4px;text-transform:uppercase;color:var(--text-dim);padding:10px 24px 4px;opacity:.5}
+.adm-item{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;transition:all .2s;border-left:2px solid transparent;user-select:none}
+.adm-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.adm-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(201,168,76,.05)}
+.adm-item .ai{font-size:13px;width:16px;text-align:center;opacity:.7}
+.adm-foot{padding:18px 24px;border-top:1px solid var(--border-soft);display:flex;flex-direction:column;gap:8px}
+.adm-close-btn{display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid var(--border-soft);color:var(--text-dim);font-size:8px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .2s;background:none}
+.adm-close-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* Admin main */
+.adm-main{flex:1;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.adm-topbar{position:sticky;top:0;z-index:40;background:rgba(6,6,8,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border-soft);padding:0 36px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.adm-topbar-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;letter-spacing:2px}
+.adm-topbar-title em{color:var(--gold);font-style:italic}
+.adm-page{display:none;padding:32px 36px;flex:1}
+.adm-page.active{display:block}
+
+/* Admin stats */
+.adm-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:28px}
+.adm-stat{background:var(--surface);border:1px solid var(--border-soft);padding:20px 24px;position:relative;overflow:hidden}
+.adm-stat::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(to right,var(--gold),transparent);opacity:.4}
+.adm-stat-num{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:var(--text);line-height:1;margin-bottom:4px}
+.adm-stat-num em{color:var(--gold);font-style:normal}
+.adm-stat-label{font-size:7px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)}
+
+/* Admin section head */
+.adm-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.adm-head h2{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;letter-spacing:1px}
+.adm-head h2 em{color:var(--gold);font-style:italic}
+
+/* Admin buttons */
+.btn-adm{display:inline-flex;align-items:center;gap:8px;padding:9px 22px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:8px;font-weight:300;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.btn-adm:hover,.btn-adm.solid{background:var(--gold);color:var(--bg)}
+.btn-adm.solid:hover{background:var(--gold-light)}
+.btn-adm.sm{padding:6px 14px;font-size:7px}
+.btn-adm.em{border-color:var(--emerald-bright);color:#6ecfb0}
+.btn-adm.em:hover{background:var(--emerald-bright);color:#fff;border-color:var(--emerald-bright)}
+.btn-adm.danger{border-color:var(--red);color:var(--red-bright)}
+.btn-adm.danger:hover{background:var(--red);color:#ffd0d0}
+.btn-adm-cancel{padding:9px 22px;background:transparent;border:1px solid var(--border-soft);color:var(--text-dim);font-size:8px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.btn-adm-cancel:hover{border-color:var(--text-dim);color:var(--text)}
+
+/* Admin table */
+.adm-table{width:100%;border-collapse:collapse}
+.adm-table th{text-align:left;padding:9px 14px;font-size:7px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--border);font-weight:300}
+.adm-table td{padding:12px 14px;border-bottom:1px solid var(--border-soft);font-size:12px;color:var(--text-mid);vertical-align:middle}
+.adm-table tr:hover td{background:rgba(255,255,255,.02)}
+.adm-thumb{width:52px;height:38px;object-fit:cover;display:block;border:1px solid var(--border-soft)}
+.adm-thumb-ph{width:52px;height:38px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px;opacity:.2;border:1px solid var(--border-soft)}
+.adm-name-cell{font-size:13px;color:var(--text);font-weight:300}
+.tag-pill{display:inline-block;padding:2px 8px;border:1px solid var(--border-soft);font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin:2px}
+.tag-pill.cat{border-color:var(--border);color:var(--gold)}
+.tag-pill.fbx{border-color:rgba(45,122,95,.4);color:#6ecfb0}
+.row-acts{display:flex;gap:6px}
+
+/* Admin form */
+.adm-form-panel{background:var(--surface);border:1px solid var(--border-soft);padding:28px;margin-bottom:20px;position:relative}
+.adm-form-panel::before,.adm-form-panel::after{content:'';position:absolute;width:18px;height:18px;border-color:var(--gold);border-style:solid;opacity:.3}
+.adm-form-panel::before{top:10px;left:10px;border-width:1px 0 0 1px}
+.adm-form-panel::after{bottom:10px;right:10px;border-width:0 1px 1px 0}
+.adm-form-group{margin-bottom:18px}
+.adm-label{display:block;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+.adm-label.em{color:#6ecfb0}
+.adm-input,.adm-textarea,.adm-select{width:100%;background:var(--bg2);border:1px solid var(--border-soft);border-bottom-color:var(--border);color:var(--text);font-family:'Montserrat',sans-serif;font-size:13px;font-weight:300;padding:10px 13px;outline:none;transition:border-color .2s;appearance:none}
+.adm-input:focus,.adm-textarea:focus,.adm-select:focus{border-bottom-color:var(--gold)}
+.adm-textarea{resize:vertical;min-height:76px}
+.adm-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.adm-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.adm-form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;padding-top:18px;border-top:1px solid var(--border-soft)}
+
+/* Drop zone */
+.adm-dz{border:1px dashed var(--border);padding:28px;text-align:center;cursor:pointer;transition:all .3s}
+.adm-dz:hover,.adm-dz.dragover{border-color:var(--gold);background:rgba(201,168,76,.03)}
+.adm-dz.fbx-z:hover,.adm-dz.fbx-z.dragover{border-color:var(--emerald-bright);background:rgba(45,122,95,.04)}
+.dz-ico{font-size:26px;opacity:.2;margin-bottom:8px}
+.dz-txt{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)}
+.dz-txt span{color:var(--gold)}
+.dz-txt.em span{color:#6ecfb0}
+.adm-img-prev{width:100%;max-height:130px;object-fit:cover;margin-top:10px;display:none}
+.adm-img-prev.visible{display:block}
+.adm-fbx-loaded{margin-top:8px;padding:7px 11px;background:rgba(45,122,95,.1);border:1px solid rgba(45,122,95,.3);font-size:10px;letter-spacing:1px;color:#6ecfb0;display:none}
+.adm-fbx-loaded.visible{display:block}
+
+/* Settings grid */
+.adm-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+/* Admin empty */
+.adm-empty{padding:60px;text-align:center;border:1px solid var(--border-soft)}
+.adm-empty-icon{font-size:44px;opacity:.07;margin-bottom:14px}
+.adm-empty-text{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)}
+
+/* Admin confirm */
+.adm-confirm-bg{position:fixed;inset:0;background:rgba(6,6,8,.85);backdrop-filter:blur(6px);z-index:6000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.adm-confirm-bg.open{opacity:1;pointer-events:all}
+.adm-confirm-box{background:var(--surface);border:1px solid var(--border);padding:32px;max-width:380px;width:90%;text-align:center}
+.adm-confirm-box h3{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;margin-bottom:10px}
+.adm-confirm-box p{font-size:12px;color:var(--text-dim);line-height:1.7;margin-bottom:24px}
+.adm-confirm-acts{display:flex;gap:10px;justify-content:center}
+
+/* Admin edit modal */
+.adm-edit-bg{position:fixed;inset:0;background:rgba(6,6,8,.93);backdrop-filter:blur(12px);z-index:6000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.adm-edit-bg.open{opacity:1;pointer-events:all}
+.adm-edit-modal{background:var(--surface);border:1px solid var(--border);width:600px;max-width:94vw;max-height:90vh;overflow-y:auto;padding:36px;position:relative;transform:translateY(14px);transition:transform .3s}
+.adm-edit-bg.open .adm-edit-modal{transform:translateY(0)}
+.adm-edit-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;margin-bottom:24px}
+.adm-edit-title em{color:var(--gold);font-style:italic}
+.adm-edit-close{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--text-dim);font-size:17px;cursor:pointer}
+.adm-edit-close:hover{color:var(--gold)}
+
+hr.gr{border:none;border-top:1px solid var(--border-soft);margin:22px 0}
+
+/* ANIMATIONS */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scrollBob{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(12px);opacity:.2}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .8s ease,transform .8s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--gold)}
+
+/* Admin toast */
+.adm-toast{position:fixed;bottom:32px;right:32px;background:var(--surface);border:1px solid var(--gold);border-left:3px solid var(--gold);padding:13px 20px;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);z-index:9500;transform:translateX(130%);transition:transform .4s cubic-bezier(.16,1,.3,1)}
+.adm-toast.show{transform:translateX(0)}
+.adm-toast.err{border-color:var(--red-bright);border-left-color:var(--red-bright);color:var(--red-bright)}
+
+/* Lock screen */
+#lockScreen{position:fixed;inset:0;z-index:6000;background:var(--bg);display:none;align-items:center;justify-content:center;flex-direction:column}
+#lockScreen.visible{display:flex}
+.lock-box{width:340px;max-width:90vw;text-align:center;padding:48px 40px;background:var(--surface);border:1px solid var(--border);position:relative}
+.lock-box::before,.lock-box::after{content:'';position:absolute;width:20px;height:20px;border-color:var(--gold);border-style:solid;opacity:.4}
+.lock-box::before{top:14px;left:14px;border-width:1px 0 0 1px}
+.lock-box::after{bottom:14px;right:14px;border-width:0 1px 1px 0}
+.lock-deco{margin-bottom:20px;opacity:.7}
+.lock-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;letter-spacing:2px;color:var(--text);margin-bottom:6px}
+.lock-title em{color:var(--gold);font-style:italic}
+.lock-sub{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:24px}
+.lock-input-wrap{position:relative;margin-bottom:0}
+.lock-input{width:100%;background:var(--bg2);border:1px solid var(--border-soft);border-bottom:1px solid var(--border);color:var(--text);font-family:'Montserrat',sans-serif;font-size:14px;font-weight:300;padding:12px 40px 12px 16px;outline:none;transition:border-color .2s;text-align:center;letter-spacing:4px}
+.lock-input:focus{border-bottom-color:var(--gold)}
+.lock-input::placeholder{letter-spacing:1px}
+.lock-show-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-dim);padding:4px;transition:color .2s}
+.lock-show-btn:hover{color:var(--gold)}
+.lock-error{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--red-bright);min-height:20px;margin:8px 0;transition:opacity .2s}
+.lock-btn{width:100%;padding:13px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:4px;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-top:4px}
+.lock-btn:hover{background:var(--gold);color:var(--bg)}
+.lock-attempts{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--red-bright);margin-top:8px;min-height:16px}
+
+/* Admin hint badge in footer */
+.admin-hint{font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);opacity:.2;transition:opacity .3s;user-select:none;cursor:pointer}
+.admin-hint:hover{opacity:.7}
+
+@media(max-width:768px){
+  nav,#hero,#work,#about,#contact,footer{padding-left:24px;padding-right:24px}
+  .nav-links{display:none}
+  .projects-grid{grid-template-columns:1fr}
+  .project-card,.project-card.wide,.project-card.tall{grid-column:span 1;aspect-ratio:4/3}
+  .about-layout{grid-template-columns:1fr}
+  .work-header{flex-direction:column;align-items:flex-start;gap:20px}
+  #threejsCanvas{height:300px}
+  body{cursor:auto}
+  .cursor-dot,.cursor-circle{display:none}
+  .adm-stats{grid-template-columns:1fr 1fr}
+  .adm-settings-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-circle" id="cursorCircle"></div>
+
+<!-- ═══════ PUBLIC PORTFOLIO ═══════ -->
+<nav>
+  <div class="nav-logo" id="nav-logo">STUDIO<em>NAME</em></div>
+  <ul class="nav-links">
+    <li><a href="#work">Work</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<section id="hero">
+  <div class="deco-corner">
+    <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="178" height="178" stroke="#c9a84c" stroke-width="0.5"/>
+      <rect x="12" y="12" width="156" height="156" stroke="#c9a84c" stroke-width="0.5"/>
+      <rect x="24" y="24" width="132" height="132" stroke="#c9a84c" stroke-width="0.3"/>
+      <line x1="90" y1="1" x2="90" y2="24" stroke="#c9a84c" stroke-width="0.5"/>
+      <line x1="90" y1="156" x2="90" y2="179" stroke="#c9a84c" stroke-width="0.5"/>
+      <line x1="1" y1="90" x2="24" y2="90" stroke="#c9a84c" stroke-width="0.5"/>
+      <line x1="156" y1="90" x2="179" y2="90" stroke="#c9a84c" stroke-width="0.5"/>
+      <circle cx="90" cy="90" r="30" stroke="#c9a84c" stroke-width="0.5"/>
+      <circle cx="90" cy="90" r="4" fill="#c9a84c" opacity="0.5"/>
+      <path d="M90 60 L100 80 L120 80 L104 94 L110 114 L90 102 L70 114 L76 94 L60 80 L80 80 Z" stroke="#c9a84c" stroke-width="0.4" fill="none"/>
+    </svg>
+  </div>
+  <div class="hero-number">3D</div>
+  <div class="hero-rule"></div>
+  <p class="hero-eyebrow">3D Artists &amp; Blender Craftsmen</p>
+  <h1 class="hero-title">
+    <span id="h-line1">Two Minds</span><br>
+    <span class="italic" id="h-line2">One Vision</span><br>
+    <span class="outline" id="h-line3">In Three</span>
+  </h1>
+  <p class="hero-sub" id="hero-sub">A duo crafting photorealistic environments, sculpted characters &amp; abstract renders. Every pixel deliberate.</p>
+  <div class="hero-cta">
+    <a href="#work" class="btn-gold">View Portfolio</a>
+    <a href="#contact" class="btn-ghost-link">Commission Work →</a>
+  </div>
+  <div class="hero-scroll-line"></div>
+</section>
+
+<div class="ornate-divider"><div class="diamond"></div><div class="diamond"></div><div class="diamond"></div></div>
+
+<section id="work">
+  <div class="work-header reveal">
+    <div>
+      <p class="section-label">Selected Works</p>
+      <h2 class="section-title">The <em>Portfolio</em></h2>
+    </div>
+  </div>
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-btn active" onclick="filterProjects('all',this)">All</button>
+    <button class="filter-btn" onclick="filterProjects('environment',this)">Environment</button>
+    <button class="filter-btn" onclick="filterProjects('character',this)">Character</button>
+    <button class="filter-btn" onclick="filterProjects('abstract',this)">Abstract</button>
+    <button class="filter-btn" onclick="filterProjects('architecture',this)">Architecture</button>
+    <button class="filter-btn" onclick="filterProjects('product',this)">Product</button>
+    <button class="filter-btn" onclick="filterProjects('animation',this)">Animation</button>
+  </div>
+  <div class="projects-grid" id="projectsGrid"></div>
+</section>
+
+<div class="ornate-divider"><div class="diamond"></div><div class="diamond"></div><div class="diamond"></div></div>
+
+<section id="about">
+  <div class="about-layout reveal" style="grid-template-columns:1fr;max-width:720px">
+    <div>
+      <p class="section-label">The Duo</p>
+      <h2 class="section-title">About <em>Us</em></h2>
+      <p class="about-bio" id="about-bio">Two Blender artists, one shared obsession with <em>light, form, and texture</em>. We build worlds together — from concept to final render — pushing what's possible in real-time and path-traced CG.</p>
+      <div class="skills-wrap" id="skills-wrap">
+        <span class="skill-chip">Blender</span><span class="skill-chip">Cycles</span><span class="skill-chip">EEVEE</span>
+        <span class="skill-chip">Geometry Nodes</span><span class="skill-chip">Shader Editor</span><span class="skill-chip">UV Mapping</span>
+        <span class="skill-chip">Rigging</span><span class="skill-chip">Sculpting</span><span class="skill-chip">Compositing</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="ornate-divider"><div class="diamond"></div><div class="diamond"></div><div class="diamond"></div></div>
+
+<section id="contact">
+  <div class="reveal">
+    <span class="contact-eyebrow">Work With Us</span>
+    <div class="contact-headline">Let us<br><em>collaborate</em></div>
+    <a href="#" class="contact-email-link" id="contact-email">your@email.com</a>
+    <div class="social-row">
+      <a href="#" class="social-a" id="soc-instagram">Instagram</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-text" id="footer-copy">© 2025 — Studio Name</div>
+  <div class="footer-diamond"></div>
+  <div class="footer-text">Crafted by Two, in Blender</div>
+</footer>
+
+<!-- Image view modal -->
+<div class="modal-backdrop" id="viewModal">
+  <div class="modal" style="width:700px">
+    <button class="modal-close" onclick="closeModal('viewModal')">✕</button>
+    <img id="vm-img" src="" alt="" style="width:100%;max-height:420px;object-fit:cover;display:block;margin-bottom:28px">
+    <div id="vm-tags" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <div class="modal-title" id="vm-title" style="font-size:30px;margin-bottom:10px"></div>
+    <p id="vm-desc" style="color:var(--text-dim);font-size:13px;line-height:1.8"></p>
+  </div>
+</div>
+
+<!-- 3D viewer modal -->
+<div class="modal-backdrop" id="viewerModal">
+  <div class="modal" style="width:880px;padding:0">
+    <button class="modal-close" onclick="close3DViewer()">✕</button>
+    <div class="viewer-header">
+      <div class="viewer-title" id="viewer-title">Model <em>Viewer</em></div>
+      <div class="viewer-badge">FBX · Interactive</div>
+    </div>
+    <div style="position:relative">
+      <canvas id="threejsCanvas"></canvas>
+      <div class="viewer-loading" id="viewerLoading">
+        <div class="loader-ring"></div>
+        <div class="loader-text">Loading Model</div>
+      </div>
+    </div>
+    <div class="viewer-controls">
+      <button class="ctrl-btn" id="btnWire" onclick="toggleWireframe()">Wireframe</button>
+      <button class="ctrl-btn" id="btnFlat" onclick="toggleFlat()">Flat Shading</button>
+      <button class="ctrl-btn emerald" onclick="resetCamera()">Reset View</button>
+      <button class="ctrl-btn" id="btnAnim" onclick="toggleAutoRotate()">Auto-Rotate</button>
+      <span class="viewer-hint">Drag to orbit · Scroll to zoom · Right-drag to pan</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════════════
+     ADMIN PANEL
+═══════════════════════════════════════ -->
+<div id="adminPanel">
+  <aside class="adm-sidebar">
+    <div class="adm-logo">
+      <div class="al-text">STUDIO<em>NAME</em></div>
+      <div class="al-sub">Admin Panel</div>
+    </div>
+    <nav class="adm-nav">
+      <div class="adm-sec">Manage</div>
+      <div class="adm-item active" onclick="admPage('dashboard',this)"><span class="ai">◈</span> Dashboard</div>
+      <div class="adm-item" onclick="admPage('projects',this)"><span class="ai">⬡</span> Projects</div>
+      <div class="adm-item" onclick="admPage('add',this)"><span class="ai">+</span> Add Project</div>
+      <div class="adm-sec" style="margin-top:10px">Settings</div>
+      <div class="adm-item" onclick="admPage('profile',this)"><span class="ai">✦</span> Profile</div>
+      <div class="adm-item" onclick="admPage('contact',this)"><span class="ai">◎</span> Contact &amp; Social</div>
+      <div class="adm-item" onclick="admPage('github',this)"><span class="ai">⌥</span> GitHub Storage</div>
+      <div class="adm-item" onclick="showChangePw()"><span class="ai">🔑</span> Change Password</div>
+    </nav>
+    <div class="adm-foot">
+      <button class="adm-close-btn" onclick="lockAdmin()" style="margin-bottom:8px;border-color:rgba(201,168,76,.3);color:var(--gold)">🔒 &nbsp;Lock Admin</button>
+      <button class="adm-close-btn" onclick="closeAdmin()">✕ &nbsp;Close Admin</button>
+    </div>
+  </aside>
+
+  <div class="adm-main">
+    <div class="adm-topbar">
+      <div class="adm-topbar-title" id="admTopTitle">Dashboard <em>Overview</em></div>
+      <button class="btn-adm sm" onclick="admPage('add',document.querySelectorAll('.adm-item')[2])">+ Add Project</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="adm-page active" id="adm-dashboard">
+      <div class="adm-stats" id="admStats"></div>
+      <div class="adm-head">
+        <h2>Recent <em>Projects</em></h2>
+        <button class="btn-adm sm" onclick="admPage('projects',document.querySelectorAll('.adm-item')[1])">View All</button>
+      </div>
+      <div id="admRecentList"></div>
+    </div>
+
+    <!-- ALL PROJECTS -->
+    <div class="adm-page" id="adm-projects">
+      <div class="adm-head">
+        <h2>All <em>Projects</em></h2>
+        <button class="btn-adm sm" onclick="admPage('add',document.querySelectorAll('.adm-item')[2])">+ Add New</button>
+      </div>
+      <div id="admTableWrap"></div>
+    </div>
+
+    <!-- ADD PROJECT -->
+    <div class="adm-page" id="adm-add">
+      <div class="adm-head"><h2>Add <em>Project</em></h2></div>
+      <div class="adm-form-panel">
+        <div class="adm-row-3">
+          <div class="adm-form-group" style="grid-column:span 2">
+            <label class="adm-label">Title *</label>
+            <input type="text" class="adm-input" id="a-title" placeholder="e.g. Desert Ruins Environment">
+          </div>
+          <div class="adm-form-group">
+            <label class="adm-label">Category</label>
+            <select class="adm-select" id="a-cat">
+              <option value="environment">Environment</option>
+              <option value="character">Character</option>
+              <option value="abstract">Abstract</option>
+              <option value="architecture">Architecture</option>
+              <option value="product">Product</option>
+              <option value="animation">Animation</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="adm-form-group">
+          <label class="adm-label">Description</label>
+          <textarea class="adm-textarea" id="a-desc" placeholder="Techniques, render engine, creative process..."></textarea>
+        </div>
+        <div class="adm-row">
+          <div class="adm-form-group">
+            <label class="adm-label">Display Size</label>
+            <select class="adm-select" id="a-size">
+              <option value="normal">Standard (4:3)</option>
+              <option value="wide">Wide / Featured (16:9)</option>
+              <option value="tall">Tall (2:3)</option>
+            </select>
+          </div>
+          <div class="adm-form-group">
+            <label class="adm-label">Tags (comma separated)</label>
+            <input type="text" class="adm-input" id="a-tags" placeholder="Cycles, Photorealistic, HDR">
+          </div>
+        </div>
+        <hr class="gr">
+        <div class="adm-row">
+          <div class="adm-form-group">
+            <label class="adm-label">Render Image (JPG / PNG / WebP)</label>
+            <div class="adm-dz" id="a-imgZone">
+              <div class="dz-ico">◈</div>
+              <p class="dz-txt">Drop image or <span>browse</span></p>
+              <img class="adm-img-prev" id="a-imgPrev" alt="">
+            </div>
+            <input type="file" id="a-imgInput" accept="image/*" style="display:none">
+          </div>
+          <div class="adm-form-group">
+            <label class="adm-label em">3D Model — FBX (interactive viewer)</label>
+            <div class="adm-dz fbx-z" id="a-fbxZone">
+              <div class="dz-ico" style="opacity:.3">⬡</div>
+              <p class="dz-txt em">Drop <span>.fbx file</span> or browse</p>
+            </div>
+            <div class="adm-fbx-loaded" id="a-fbxName"></div>
+            <input type="file" id="a-fbxInput" accept=".fbx" style="display:none">
+          </div>
+        </div>
+        <div class="adm-form-actions">
+          <button class="btn-adm-cancel" onclick="resetAddForm()">Clear</button>
+          <button class="btn-adm solid" onclick="submitProject()">✦ Publish to Portfolio</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="adm-page" id="adm-profile">
+      <div class="adm-head"><h2>Edit <em>Profile</em></h2></div>
+      <div class="adm-settings-grid">
+        <div class="adm-form-panel">
+          <div class="adm-form-group"><label class="adm-label">Name / Studio</label><input type="text" class="adm-input" id="s-name" placeholder="Your Name"></div>
+          <div class="adm-row">
+            <div class="adm-form-group"><label class="adm-label">Hero Line 1</label><input type="text" class="adm-input" id="s-l1" placeholder="Crafting"></div>
+            <div class="adm-form-group"><label class="adm-label">Hero Line 2 (italic)</label><input type="text" class="adm-input" id="s-l2" placeholder="Worlds"></div>
+          </div>
+          <div class="adm-form-group"><label class="adm-label">Hero Subtitle</label><input type="text" class="adm-input" id="s-sub"></div>
+          <div class="adm-form-group"><label class="adm-label">Bio</label><textarea class="adm-textarea" id="s-bio" style="min-height:100px"></textarea></div>
+          <div class="adm-form-group"><label class="adm-label">Skills (comma separated)</label><textarea class="adm-textarea" id="s-skills" placeholder="Blender, Cycles, EEVEE..."></textarea></div>
+          <div class="adm-form-actions"><button class="btn-adm solid" onclick="saveProfile()">Save Profile</button></div>
+        </div>
+        <div class="adm-form-panel">
+          <div class="adm-form-group">
+            <label class="adm-label">Profile / Avatar Image</label>
+            <div class="adm-dz" id="s-avatarZone">
+              <div class="dz-ico">◈</div>
+              <p class="dz-txt">Drop image or <span>browse</span></p>
+              <img class="adm-img-prev" id="s-avatarPrev" alt="">
+            </div>
+            <input type="file" id="s-avatarInput" accept="image/*" style="display:none">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTACT -->
+    <div class="adm-page" id="adm-contact">
+      <div class="adm-head"><h2>Contact <em>&amp; Social</em></h2></div>
+      <div class="adm-form-panel" style="max-width:520px">
+        <div class="adm-form-group"><label class="adm-label">Email</label><input type="email" class="adm-input" id="c-email"></div>
+        <div class="adm-form-group"><label class="adm-label">Instagram URL</label><input type="url" class="adm-input" id="c-ig"></div>
+        <div class="adm-form-actions"><button class="btn-adm solid" onclick="saveContact()">Save Contact Info</button></div>
+      </div>
+    </div>
+    <!-- GITHUB -->
+    <div class="adm-page" id="adm-github">
+      <div class="adm-head"><h2>GitHub <em>Storage</em></h2></div>
+      <div class="adm-form-panel" style="max-width:520px">
+        <p style="font-size:11px;color:var(--text-dim);line-height:1.8;margin-bottom:24px">
+          Files and project data are stored directly in your GitHub repository.
+          Create a <strong style="color:var(--text)">Personal Access Token</strong> at
+          <a href="https://github.com/settings/tokens" target="_blank" style="color:var(--gold)">github.com/settings/tokens</a>
+          with <strong style="color:var(--text)">Contents: Read &amp; Write</strong> permission.
+        </p>
+        <div class="adm-form-group"><label class="adm-label">GitHub Username</label><input type="text" class="adm-input" id="gh-user" placeholder="yourusername"></div>
+        <div class="adm-form-group"><label class="adm-label">Repository Name</label><input type="text" class="adm-input" id="gh-repo" placeholder="portfolio"></div>
+        <div class="adm-form-group">
+          <label class="adm-label">Personal Access Token</label>
+          <div style="position:relative">
+            <input type="password" class="adm-input" id="gh-token" placeholder="github_pat_...">
+            <button onclick="toggleGHToken()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px">👁</button>
+          </div>
+          <p style="font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:1px">Stored locally in your browser only. Never shared.</p>
+        </div>
+        <div class="adm-form-group">
+          <label class="adm-label">Branch</label>
+          <input type="text" class="adm-input" id="gh-branch" placeholder="main" value="main">
+        </div>
+        <div id="ghStatus" style="font-size:10px;letter-spacing:2px;text-transform:uppercase;min-height:20px;margin-bottom:12px"></div>
+        <div class="adm-form-actions" style="justify-content:space-between">
+          <button class="btn-adm" onclick="testGHConnection()">Test Connection</button>
+          <button class="btn-adm solid" onclick="saveGHConfig()">Save Settings</button>
+        </div>
+      </div>
+    </div>
+<div class="adm-confirm-bg" id="admConfirm">
+  <div class="adm-confirm-box">
+    <h3>Remove <em style="color:var(--gold);font-style:italic">Project</em></h3>
+    <p>This permanently removes the project from your portfolio.</p>
+    <div class="adm-confirm-acts">
+      <button class="btn-adm-cancel" onclick="closeAdmConfirm()">Cancel</button>
+      <button class="btn-adm danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin edit modal -->
+<div class="adm-edit-bg" id="admEditBg">
+  <div class="adm-edit-modal">
+    <button class="adm-edit-close" onclick="closeEditModal()">✕</button>
+    <div class="adm-edit-title">Edit <em>Project</em></div>
+    <input type="hidden" id="e-id">
+    <div class="adm-row-3">
+      <div class="adm-form-group" style="grid-column:span 2"><label class="adm-label">Title</label><input type="text" class="adm-input" id="e-title"></div>
+      <div class="adm-form-group"><label class="adm-label">Category</label>
+        <select class="adm-select" id="e-cat">
+          <option value="environment">Environment</option><option value="character">Character</option>
+          <option value="abstract">Abstract</option><option value="architecture">Architecture</option>
+          <option value="product">Product</option><option value="animation">Animation</option><option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="adm-form-group"><label class="adm-label">Description</label><textarea class="adm-textarea" id="e-desc"></textarea></div>
+    <div class="adm-row">
+      <div class="adm-form-group"><label class="adm-label">Size</label>
+        <select class="adm-select" id="e-size"><option value="normal">Standard</option><option value="wide">Wide</option><option value="tall">Tall</option></select>
+      </div>
+      <div class="adm-form-group"><label class="adm-label">Tags</label><input type="text" class="adm-input" id="e-tags"></div>
+    </div>
+    <div class="adm-row">
+      <div class="adm-form-group">
+        <label class="adm-label">Replace Image</label>
+        <div class="adm-dz" id="e-imgZone"><div class="dz-ico">◈</div><p class="dz-txt">Drop or <span>browse</span></p><img class="adm-img-prev" id="e-imgPrev" alt=""></div>
+        <input type="file" id="e-imgInput" accept="image/*" style="display:none">
+      </div>
+      <div class="adm-form-group">
+        <label class="adm-label em">Replace FBX</label>
+        <div class="adm-dz fbx-z" id="e-fbxZone"><div class="dz-ico" style="opacity:.3">⬡</div><p class="dz-txt em">Drop <span>.fbx</span> or browse</p></div>
+        <div class="adm-fbx-loaded" id="e-fbxName"></div>
+        <input type="file" id="e-fbxInput" accept=".fbx" style="display:none">
+      </div>
+    </div>
+    <div class="adm-form-actions">
+      <button class="btn-adm-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-adm solid" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lock screen (sits inside #adminPanel, shown before auth) -->
+<div id="lockScreen">
+  <div class="lock-box">
+    <div class="lock-deco">
+      <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+        <rect x="20" y="35" width="40" height="30" rx="2" stroke="#c9a84c" stroke-width="1"/>
+        <path d="M28 35V26a12 12 0 0124 0v9" stroke="#c9a84c" stroke-width="1" stroke-linecap="round"/>
+        <circle cx="40" cy="50" r="3" fill="#c9a84c" opacity="0.6"/>
+        <line x1="40" y1="53" x2="40" y2="58" stroke="#c9a84c" stroke-width="1"/>
+      </svg>
+    </div>
+    <div class="lock-title" id="lockTitle">Admin <em>Access</em></div>
+    <p class="lock-sub" id="lockSub">Enter your password to continue</p>
+    <div class="lock-input-wrap">
+      <input type="password" class="lock-input" id="lockInput" placeholder="Password" autocomplete="current-password">
+      <button class="lock-show-btn" id="lockShowBtn" onclick="toggleLockPw()">👁</button>
+    </div>
+    <div class="lock-error" id="lockError"></div>
+    <button class="lock-btn" id="lockSubmitBtn" onclick="submitPassword()">Unlock</button>
+
+    <!-- Change password form (hidden by default) -->
+    <div id="changePwForm" style="display:none;margin-top:20px">
+      <div class="lock-input-wrap" style="margin-bottom:10px">
+        <input type="password" class="lock-input" id="newPw1" placeholder="New password">
+      </div>
+      <div class="lock-input-wrap">
+        <input type="password" class="lock-input" id="newPw2" placeholder="Confirm new password">
+      </div>
+      <div class="lock-error" id="changePwError"></div>
+      <button class="lock-btn" onclick="saveNewPassword()" style="margin-top:12px">Set Password</button>
+    </div>
+  </div>
+</div>
+
+<div class="adm-toast" id="admToast"></div>
+
+<script>
+// ═══ SHARED STATE ═══
+let projects     = [];
+let profile      = JSON.parse(localStorage.getItem('rf3_profile') || '{}');
+let contact      = JSON.parse(localStorage.getItem('rf3_contact') || '{}');
+let activeFilter = 'all';
+
+// ═══ GITHUB API STORAGE ═══
+const GH_CONFIG_KEY = 'rf3_gh_config';
+
+function ghCfg(){ return JSON.parse(localStorage.getItem(GH_CONFIG_KEY)||'{}'); }
+function ghBase(cfg){ return `https://api.github.com/repos/${cfg.user}/${cfg.repo}/contents`; }
+function ghHeaders(cfg){ return { 'Authorization':`token ${cfg.token}`, 'Accept':'application/vnd.github.v3+json', 'Content-Type':'application/json' }; }
+function ghRawBase(cfg){ return `https://raw.githubusercontent.com/${cfg.user}/${cfg.repo}/${cfg.branch||'main'}`; }
+
+async function ghGetFile(path){
+  const cfg=ghCfg(); if(!cfg.token) return null;
+  const r=await fetch(`${ghBase(cfg)}/${path}`,{headers:ghHeaders(cfg)});
+  if(r.status===404) return null;
+  if(!r.ok) throw new Error(`GitHub ${r.status}`);
+  return await r.json();
+}
+
+async function ghPutFile(path, b64content, message, sha=null){
+  const cfg=ghCfg();
+  const body={message, content:b64content, branch:cfg.branch||'main'};
+  if(sha) body.sha=sha;
+  const r=await fetch(`${ghBase(cfg)}/${path}`,{method:'PUT',headers:ghHeaders(cfg),body:JSON.stringify(body)});
+  if(!r.ok){ const e=await r.json(); throw new Error(e.message||`GitHub ${r.status}`); }
+  return await r.json();
+}
+
+async function ghDeleteFile(path, message, sha){
+  const cfg=ghCfg(); if(!cfg.token) return;
+  const r=await fetch(`${ghBase(cfg)}/${path}`,{method:'DELETE',headers:ghHeaders(cfg),body:JSON.stringify({message,sha,branch:cfg.branch||'main'})});
+  if(!r.ok && r.status!==404) throw new Error(`GitHub delete ${r.status}`);
+}
+
+// Load projects.json from repo
+async function ghLoadProjects(){
+  try{
+    const cfg=ghCfg(); if(!cfg.user||!cfg.repo) return [];
+    const r=await fetch(`${ghRawBase(cfg)}/projects.json?t=${Date.now()}`);
+    if(!r.ok) return [];
+    return await r.json();
+  }catch{ return []; }
+}
+
+// Save projects.json (metadata only — no binary data)
+async function ghSaveProjectsMeta(list){
+  const meta=list.map(p=>({...p})); // shallow clone
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(meta,null,2))));
+  const existing=await ghGetFile('projects.json');
+  await ghPutFile('projects.json',content,'Update projects.json',existing?.sha);
+}
+
+// Upload a binary asset (image or FBX) — returns raw URL
+async function ghUploadAsset(dataUrl, filename, folder){
+  const b64=dataUrl.split(',')[1];
+  const path=`assets/${folder}/${filename}`;
+  const existing=await ghGetFile(path);
+  await ghPutFile(path,b64,`Add ${filename}`,existing?.sha);
+  const cfg=ghCfg();
+  return `${ghRawBase(cfg)}/${path}`;
+}
+
+// Delete an asset file
+async function ghDeleteAsset(path){
+  const file=await ghGetFile(path);
+  if(file) await ghDeleteFile(path,`Remove ${path}`,file.sha);
+}
+
+// ═══ CURSOR ═══
+const dot = document.getElementById('cursorDot'), ring = document.getElementById('cursorCircle');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px'});
+(function R(){rx+=(mx-rx)*.1;ry+=(my-ry)*.1;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(R)})();
+
+// ═══ REVEAL ═══
+const ro=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible')}),{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>ro.observe(el));
+
+// ═══ INIT ═══
+async function init(){
+  applyProfile();
+  applyContact();
+  projects = await ghLoadProjects();
+  renderProjects();
+}
+
+function applyProfile(){
+  if(profile.name){document.getElementById('nav-logo').innerHTML=profile.name.toUpperCase().replace(/(\S+)\s*$/,'<em>$1</em>');document.getElementById('footer-copy').textContent='© 2025 — '+profile.name;}
+  if(profile.l1)document.getElementById('h-line1').textContent=profile.l1;
+  if(profile.l2)document.getElementById('h-line2').textContent=profile.l2;
+  if(profile.sub)document.getElementById('hero-sub').textContent=profile.sub;
+  if(profile.bio)document.getElementById('about-bio').innerHTML=profile.bio;
+  if(profile.skills&&profile.skills.length)document.getElementById('skills-wrap').innerHTML=profile.skills.map(s=>`<span class="skill-chip">${s}</span>`).join('');
+  if(profile.avatar){const i=document.getElementById('avatar-img');i.src=profile.avatar;i.classList.add('visible');document.getElementById('about-avatar').style.fontSize='0';}
+}
+function applyContact(){
+  if(contact.email){const e=document.getElementById('contact-email');e.textContent=contact.email;e.href='mailto:'+contact.email;}
+  if(contact.instagram)document.getElementById('soc-instagram').href=contact.instagram;
+}
+
+// ═══ PROJECTS ═══
+function filterProjects(cat,btn){
+  activeFilter=cat;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProjects();
+}
+function renderProjects(){
+  const grid=document.getElementById('projectsGrid');
+  const list=activeFilter==='all'?projects:projects.filter(p=>p.cat===activeFilter);
+  if(!list.length){grid.innerHTML=`<div class="empty-state"><div class="empty-icon">◈</div><p class="empty-text">No works yet</p></div>`;return;}
+  grid.innerHTML=list.map(p=>{
+    const hasFbx=!!p.fbx,hasImg=!!p.image;
+    const thumb=hasImg?`<img class="thumb" src="${p.image}" alt="${p.title}" loading="lazy">`:
+      hasFbx?`<div class="fbx-thumb-placeholder"><div class="fbx-icon">⬡</div><div class="fbx-name">${p.fbx.name}</div></div>`:
+      `<div class="thumb-placeholder"><div class="placeholder-icon">◈</div><div class="placeholder-label">${p.title}</div></div>`;
+    return `<div class="project-card ${p.size==='wide'?'wide':p.size==='tall'?'tall':''}">
+      ${hasFbx?`<div class="fbx-badge">FBX · 3D</div>`:''}
+      ${thumb}
+      <div class="project-overlay">
+        <div class="proj-cat">${p.cat}</div>
+        <div class="proj-name">${p.title}</div>
+        ${p.desc?`<div class="proj-desc">${p.desc.substring(0,90)}${p.desc.length>90?'…':''}</div>`:''}
+        <div class="proj-actions">
+          ${hasImg?`<button class="proj-btn" onclick="viewImage(${p.id})">View Render</button>`:''}
+          ${hasFbx?`<button class="proj-btn fbx3d" onclick="open3DViewer(${p.id})">⬡ View 3D</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══ IMAGE MODAL ═══
+function viewImage(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  document.getElementById('vm-title').textContent=p.title;
+  document.getElementById('vm-desc').textContent=p.desc||'';
+  const img=document.getElementById('vm-img');img.src=p.image||'';img.style.display=p.image?'block':'none';
+  document.getElementById('vm-tags').innerHTML=[p.cat,...(p.tags||[])].map(t=>`<span style="padding:4px 12px;border:1px solid var(--border);font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--gold)">${t}</span>`).join('');
+  openModal('viewModal');
+}
+function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+document.querySelectorAll('.modal-backdrop').forEach(b=>b.addEventListener('click',e=>{if(e.target===b){if(b.id==='viewerModal')close3DViewer();else closeModal(b.id);}}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('adminPanel').classList.contains('open')){close3DViewer();document.querySelectorAll('.modal-backdrop.open').forEach(m=>closeModal(m.id));}});
+
+// ═══ THREE.JS ═══
+let threeScene,threeCamera,threeRenderer,threeControls,threeAnimMixer,threeAnimId=null,currentMesh=null;
+let isWireframe=false,isFlat=false,isAutoRotate=true;
+
+function open3DViewer(pid){
+  const p=projects.find(x=>x.id===pid);if(!p||!p.fbx)return;
+  document.getElementById('viewer-title').innerHTML=p.title+' <em>· FBX</em>';
+  openModal('viewerModal');
+  // Support both GitHub URL and legacy dataUrl
+  const src = p.fbx.url || p.fbx.dataUrl;
+  setTimeout(()=>initThreeJS(src),80);
+}
+async function initThreeJS(fbxSrc){
+  const canvas=document.getElementById('threejsCanvas'),loading=document.getElementById('viewerLoading');
+  loading.classList.remove('hidden');
+  disposeThree();
+  const W=canvas.clientWidth||canvas.offsetWidth,H=480;  threeRenderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+  threeRenderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  threeRenderer.setSize(W,H);
+  threeRenderer.shadowMap.enabled=true;
+  threeRenderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  threeRenderer.outputEncoding=THREE.sRGBEncoding;
+  threeRenderer.toneMapping=THREE.ACESFilmicToneMapping;  // same as Blender ACES
+  threeRenderer.toneMappingExposure=1.1;
+  threeRenderer.physicallyCorrectLights=true;
+
+  threeScene=new THREE.Scene();
+  threeScene.background=new THREE.Color(0x0e0e12); // dark near-black bg like Blender rendered viewport
+
+  threeCamera=new THREE.PerspectiveCamera(40,W/H,.01,10000);
+  threeCamera.position.set(0,2,5);
+
+  // Generate a neutral studio environment map using PMREMGenerator
+  // This gives reflections and ambient IBL — closest to Blender's rendered look
+  const pmrem=new THREE.PMREMGenerator(threeRenderer);
+  pmrem.compileEquirectangularShader();
+  const envScene=new THREE.Scene();
+  // Gradient-lit environment: warm top, cool bottom, grey sides
+  const envGeo=new THREE.SphereGeometry(50,16,16);
+  envGeo.scale(-1,1,1);
+  const envMat=new THREE.MeshBasicMaterial({vertexColors:true});
+  const envColors=[];
+  const posArr=envGeo.attributes.position.array;
+  for(let i=0;i<posArr.length;i+=3){
+    const y=posArr[i+1];
+    const t=Math.max(0,Math.min(1,(y+50)/100));
+    // top: warm white, bottom: very dark, mid: neutral grey
+    envColors.push(
+      0.7+t*0.3,   // R
+      0.7+t*0.3,   // G
+      0.72+t*0.28  // B
+    );
+  }
+  envGeo.setAttribute('color',new THREE.Float32BufferAttribute(envColors,3));
+  envScene.add(new THREE.Mesh(envGeo,envMat));
+  const envRT=pmrem.fromScene(envScene,0,0.1,100);
+  threeScene.environment=envRT.texture; // IBL for all materials
+  threeScene.environmentIntensity=0.8;
+  pmrem.dispose();
+
+  // Key light — strong warm from top-right (like a studio key)
+  const kl=new THREE.DirectionalLight(0xfff5e8,3.0);
+  kl.position.set(5,8,5);kl.castShadow=true;
+  kl.shadow.mapSize.set(2048,2048);
+  kl.shadow.bias=-0.0005;
+  kl.shadow.camera.near=0.1;kl.shadow.camera.far=100;
+  threeScene.add(kl);
+
+  // Fill light — cool soft from left (reduces harsh shadows)
+  const fl=new THREE.DirectionalLight(0xddeeff,0.8);
+  fl.position.set(-6,3,-2);threeScene.add(fl);
+
+  // Rim light — subtle warm backlight for depth separation
+  const rl=new THREE.DirectionalLight(0xffeedd,1.2);
+  rl.position.set(0,4,-7);threeScene.add(rl);
+
+  // Subtle ground plane to catch shadows (invisible itself)
+  const ground=new THREE.Mesh(
+    new THREE.PlaneGeometry(100,100),
+    new THREE.ShadowMaterial({opacity:0.35})
+  );
+  ground.rotation.x=-Math.PI/2;
+  ground.position.y=0;
+  ground.receiveShadow=true;
+  threeScene.add(ground);
+
+  threeControls=new THREE.OrbitControls(threeCamera,canvas);
+  threeControls.enableDamping=true;threeControls.dampingFactor=.05;threeControls.autoRotate=true;threeControls.autoRotateSpeed=1.2;threeControls.minDistance=.1;threeControls.maxDistance=500;
+  const loader=new THREE.FBXLoader();
+  try{
+    // Support GitHub raw URL or legacy base64 dataUrl
+    let buffer;
+    if(fbxSrc.startsWith('data:')){
+      const b64=fbxSrc.split(',')[1],bin=atob(b64),bytes=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+      buffer=bytes.buffer;
+    } else {
+      const resp=await fetch(fbxSrc);
+      if(!resp.ok)throw new Error(`Fetch failed: ${resp.status}`);
+      buffer=await resp.arrayBuffer();
+    }
+    const fbx=loader.parse(buffer,'');
+    const box=new THREE.Box3().setFromObject(fbx),sz=box.getSize(new THREE.Vector3()),ct=box.getCenter(new THREE.Vector3());
+    const sc=3.0/Math.max(sz.x,sz.y,sz.z);fbx.scale.setScalar(sc);fbx.position.sub(ct.multiplyScalar(sc));fbx.position.y-=box.min.y*sc;
+    fbx.traverse(c=>{
+      if(!c.isMesh)return;c.castShadow=c.receiveShadow=true;
+      const mats=Array.isArray(c.material)?c.material:[c.material];
+      c.material=mats.map(m=>{
+        if(!m)return new THREE.MeshStandardMaterial({color:0x888888,roughness:.6,metalness:.1});
+
+        // Null out any texture whose image never loaded (external file reference)
+        const slots=['map','normalMap','bumpMap','aoMap','alphaMap','emissiveMap','specularMap'];
+        slots.forEach(k=>{ if(m[k]&&m[k].isTexture&&!m[k].image) m[k]=null; });
+
+        // Convert Phong → Standard so IBL environment map is respected
+        const std=new THREE.MeshStandardMaterial();
+        // Color: keep original unless blown-out white
+        if(m.color&&!(m.color.r>.97&&m.color.g>.97&&m.color.b>.97))
+          std.color.copy(m.color);
+        else std.color.set(0x888888);
+
+        // Carry over any valid texture maps
+        if(m.map)          { std.map=m.map; std.map.encoding=THREE.sRGBEncoding; }
+        if(m.normalMap)    { std.normalMap=m.normalMap; }
+        if(m.bumpMap&&!m.normalMap) { std.normalMap=m.bumpMap; std.normalScale.set(.5,.5); }
+        if(m.aoMap)        { std.aoMap=m.aoMap; }
+        if(m.emissiveMap)  { std.emissiveMap=m.emissiveMap; std.emissive.set(0x111111); }
+        if(m.alphaMap)     { std.alphaMap=m.alphaMap; std.transparent=true; }
+
+        // Derive roughness/metalness from Phong shininess if available
+        if(m.shininess!==undefined){
+          std.roughness=Math.max(0.05, 1.0 - Math.min(m.shininess,300)/300);
+        } else { std.roughness=0.55; }
+        std.metalness=(m.specular&&(m.specular.r+m.specular.g+m.specular.b)>1.5)?0.6:0.05;
+
+        std.side=m.side||THREE.FrontSide;
+        std.transparent=m.transparent||false;
+        std.opacity=m.opacity!==undefined?m.opacity:1.0;
+        std.needsUpdate=true;
+        return std;
+      });
+      // Unwrap single-item arrays back to a single material
+      if(c.material.length===1) c.material=c.material[0];
+    });
+    currentMesh=fbx;threeScene.add(fbx);
+    if(fbx.animations&&fbx.animations.length){threeAnimMixer=new THREE.AnimationMixer(fbx);threeAnimMixer.clipAction(fbx.animations[0]).play();}
+    const fb2=new THREE.Box3().setFromObject(fbx),fs=fb2.getSize(new THREE.Vector3()),fc=fb2.getCenter(new THREE.Vector3());
+    threeCamera.position.set(fc.x,fc.y+fs.y*.3,fc.z+Math.max(fs.x,fs.y,fs.z)*2);threeControls.target.copy(fc);threeControls.update();
+    loading.classList.add('hidden');startRenderLoop();
+  }catch(err){loading.querySelector('.loader-text').textContent='Error loading model';console.error(err);}
+}
+function startRenderLoop(){const clk=new THREE.Clock();(function A(){threeAnimId=requestAnimationFrame(A);if(threeAnimMixer)threeAnimMixer.update(clk.getDelta());threeControls.update();threeRenderer.render(threeScene,threeCamera);})();}
+function disposeThree(){
+  if(threeAnimId){cancelAnimationFrame(threeAnimId);threeAnimId=null;}
+  if(threeRenderer){threeRenderer.dispose();threeRenderer=null;}
+  if(threeScene){threeScene.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());});threeScene=null;}
+  threeControls=null;threeCamera=null;threeAnimMixer=null;currentMesh=null;isWireframe=false;isFlat=false;isAutoRotate=true;
+  ['btnWire','btnFlat','btnAnim'].forEach(id=>document.getElementById(id).classList.remove('active'));
+}
+function close3DViewer(){disposeThree();closeModal('viewerModal');document.getElementById('viewerLoading').classList.remove('hidden');}
+function toggleWireframe(){if(!currentMesh)return;isWireframe=!isWireframe;currentMesh.traverse(c=>{if(c.isMesh)(Array.isArray(c.material)?c.material:[c.material]).forEach(m=>{if(m){m.wireframe=isWireframe;m.needsUpdate=true;}});});document.getElementById('btnWire').classList.toggle('active',isWireframe);}
+function toggleFlat(){if(!currentMesh)return;isFlat=!isFlat;currentMesh.traverse(c=>{if(c.isMesh){(Array.isArray(c.material)?c.material:[c.material]).forEach(m=>{if(m){m.flatShading=isFlat;m.needsUpdate=true;}});if(c.geometry)c.geometry.computeVertexNormals();}});document.getElementById('btnFlat').classList.toggle('active',isFlat);}
+function resetCamera(){if(!threeControls||!currentMesh)return;const b=new THREE.Box3().setFromObject(currentMesh),s=b.getSize(new THREE.Vector3()),c=b.getCenter(new THREE.Vector3());threeCamera.position.set(c.x,c.y+s.y*.3,c.z+Math.max(s.x,s.y,s.z)*2);threeControls.target.copy(c);threeControls.update();}
+function toggleAutoRotate(){if(!threeControls)return;isAutoRotate=!isAutoRotate;threeControls.autoRotate=isAutoRotate;document.getElementById('btnAnim').classList.toggle('active',isAutoRotate);}
+window.addEventListener('resize',()=>{if(!threeRenderer||!threeCamera)return;const W=document.getElementById('threejsCanvas').clientWidth;threeCamera.aspect=W/480;threeCamera.updateProjectionMatrix();threeRenderer.setSize(W,480);});
+
+// ═══ ADMIN PANEL ═══
+let admAddImg=null,admAddFbx=null,admEditImg=null,admEditFbx=null,admAvatarData=null,pendingDeleteId=null;
+
+// ═══ AUTH ═══
+const PW_KEY='rf3_pw_hash';
+const SESSION_KEY='rf3_session';
+const SESSION_TTL=30*60*1000; // 30 min auto-lock
+const MAX_ATTEMPTS=5;
+let failedAttempts=0;
+let lockoutUntil=0;
+let inactivityTimer=null;
+
+async function sha256(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function isSessionValid(){
+  try{
+    const s=JSON.parse(sessionStorage.getItem(SESSION_KEY)||'{}');
+    return s.ts&&(Date.now()-s.ts)<SESSION_TTL;
+  }catch{return false;}
+}
+function setSession(){sessionStorage.setItem(SESSION_KEY,JSON.stringify({ts:Date.now()}));}
+function clearSession(){sessionStorage.removeItem(SESSION_KEY);}
+function resetInactivityTimer(){
+  clearTimeout(inactivityTimer);
+  inactivityTimer=setTimeout(()=>{
+    if(document.getElementById('adminPanel').classList.contains('open')){
+      lockAdmin();
+      admShowToast('Auto-locked after 30 min inactivity');
+    }
+  },SESSION_TTL);
+}
+
+function openAdmin(){
+  document.getElementById('adminPanel').classList.add('open');
+  document.body.style.overflow='hidden';
+  const hasPw=!!localStorage.getItem(PW_KEY);
+  if(!hasPw){
+    // First time — show setup screen
+    showSetupScreen();
+  } else if(isSessionValid()){
+    // Already authenticated this session
+    showAdminPanel();
+  } else {
+    showLockScreen();
+  }
+}
+function closeAdmin(){
+  document.getElementById('adminPanel').classList.remove('open');
+  document.body.style.overflow='';
+  clearTimeout(inactivityTimer);
+}
+function lockAdmin(){
+  clearSession();
+  clearTimeout(inactivityTimer);
+  showLockScreen();
+}
+
+function showLockScreen(){
+  const ls=document.getElementById('lockScreen');
+  ls.classList.add('visible');
+  document.getElementById('lockTitle').innerHTML='Admin <em>Access</em>';
+  document.getElementById('lockSub').textContent='Enter your password to continue';
+  document.getElementById('lockInput').value='';
+  document.getElementById('lockError').textContent='';
+  document.getElementById('lockSubmitBtn').textContent='Unlock';
+  document.getElementById('lockSubmitBtn').onclick=submitPassword;
+  document.getElementById('changePwForm').style.display='none';
+  setTimeout(()=>document.getElementById('lockInput').focus(),100);
+}
+function showSetupScreen(){
+  const ls=document.getElementById('lockScreen');
+  ls.classList.add('visible');
+  document.getElementById('lockTitle').innerHTML='Set <em>Password</em>';
+  document.getElementById('lockSub').textContent='Create a password for admin access';
+  document.getElementById('lockInput').style.display='none';
+  document.getElementById('lockShowBtn').style.display='none';
+  document.getElementById('lockError').textContent='';
+  document.getElementById('lockSubmitBtn').style.display='none';
+  document.getElementById('changePwForm').style.display='block';
+  document.getElementById('newPw1').placeholder='Create password';
+  setTimeout(()=>document.getElementById('newPw1').focus(),100);
+}
+function showAdminPanel(){
+  document.getElementById('lockScreen').classList.remove('visible');
+  admPage('dashboard',document.querySelector('.adm-item'));
+  resetInactivityTimer();
+  // Reset activity on any interaction inside admin
+  document.getElementById('adminPanel').addEventListener('mousemove',resetInactivityTimer,{passive:true});
+  document.getElementById('adminPanel').addEventListener('keydown',resetInactivityTimer,{passive:true});
+}
+
+async function submitPassword(){
+  const now=Date.now();
+  if(now<lockoutUntil){
+    const secs=Math.ceil((lockoutUntil-now)/1000);
+    document.getElementById('lockError').textContent=`Too many attempts. Wait ${secs}s.`;
+    return;
+  }
+  const input=document.getElementById('lockInput').value;
+  if(!input){document.getElementById('lockError').textContent='Enter your password.';return;}
+  const hash=await sha256(input);
+  const stored=localStorage.getItem(PW_KEY);
+  if(hash===stored){
+    failedAttempts=0;
+    setSession();
+    showAdminPanel();
+  } else {
+    failedAttempts++;
+    document.getElementById('lockInput').value='';
+    if(failedAttempts>=MAX_ATTEMPTS){
+      lockoutUntil=Date.now()+30000; // 30s lockout
+      failedAttempts=0;
+      document.getElementById('lockError').textContent='Too many attempts. Locked for 30s.';
+      document.getElementById('lockSubmitBtn').disabled=true;
+      setTimeout(()=>{
+        document.getElementById('lockSubmitBtn').disabled=false;
+        document.getElementById('lockError').textContent='';
+        lockoutUntil=0;
+      },30000);
+    } else {
+      const left=MAX_ATTEMPTS-failedAttempts;
+      document.getElementById('lockError').textContent=`Incorrect password. ${left} attempt${left!==1?'s':''} left.`;
+    }
+  }
+}
+
+async function saveNewPassword(){
+  const p1=document.getElementById('newPw1').value;
+  const p2=document.getElementById('newPw2').value;
+  const err=document.getElementById('changePwError');
+  if(!p1){err.textContent='Enter a password.';return;}
+  if(p1.length<6){err.textContent='Password must be at least 6 characters.';return;}
+  if(p1!==p2){err.textContent='Passwords do not match.';return;}
+  const hash=await sha256(p1);
+  localStorage.setItem(PW_KEY,hash);
+  err.textContent='';
+  // Reset input visibility for next time
+  document.getElementById('lockInput').style.display='';
+  document.getElementById('lockShowBtn').style.display='';
+  document.getElementById('lockSubmitBtn').style.display='';
+  document.getElementById('newPw1').value='';
+  document.getElementById('newPw2').value='';
+  setSession();
+  showAdminPanel();
+  admShowToast('Password set — admin is now protected');
+}
+
+function showChangePw(){
+  document.getElementById('lockScreen').classList.add('visible');
+  document.getElementById('lockTitle').innerHTML='Change <em>Password</em>';
+  document.getElementById('lockSub').textContent='Set a new admin password';
+  document.getElementById('lockInput').style.display='none';
+  document.getElementById('lockShowBtn').style.display='none';
+  document.getElementById('lockSubmitBtn').style.display='none';
+  document.getElementById('changePwForm').style.display='block';
+  document.getElementById('newPw1').value='';
+  document.getElementById('newPw2').value='';
+  document.getElementById('changePwError').textContent='';
+  // Override save to go back to admin after
+  document.getElementById('changePwForm').querySelector('.lock-btn').onclick=async()=>{
+    await saveNewPassword();
+  };
+  setTimeout(()=>document.getElementById('newPw1').focus(),100);
+}
+
+function toggleLockPw(){
+  const inp=document.getElementById('lockInput');
+  inp.type=inp.type==='password'?'text':'password';
+}
+
+// Enter key submits
+document.getElementById('lockInput').addEventListener('keydown',e=>{if(e.key==='Enter')submitPassword();});
+document.getElementById('newPw1').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('newPw2').focus();});
+document.getElementById('newPw2').addEventListener('keydown',e=>{if(e.key==='Enter')saveNewPassword();});
+// Click the ⚙ in the footer, or press ` three times quickly to open admin
+let tickCount=0,tickTimer=null;
+document.addEventListener('keydown',e=>{
+  if(e.key==='`'){
+    tickCount++;
+    clearTimeout(tickTimer);
+    tickTimer=setTimeout(()=>tickCount=0,600);
+    if(tickCount>=3){
+      tickCount=0;
+      document.getElementById('adminPanel').classList.contains('open')?closeAdmin():openAdmin();
+    }
+  }
+});
+
+const admPageTitles={dashboard:'Dashboard <em>Overview</em>',projects:'All <em>Projects</em>',add:'Add <em>Project</em>',profile:'Edit <em>Profile</em>',contact:'Contact <em>&amp; Social</em>'};
+function admPage(id,navEl){
+  document.querySelectorAll('.adm-page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.adm-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('adm-'+id).classList.add('active');
+  if(navEl)navEl.classList.add('active');
+  document.getElementById('admTopTitle').innerHTML=admPageTitles[id]||id;
+  if(id==='dashboard')admUpdateDashboard();
+  if(id==='projects')admRenderTable();
+  if(id==='profile')admLoadProfile();
+  if(id==='contact')admLoadContact();
+}
+
+// Dashboard
+function admUpdateDashboard(){
+  const fbxC=projects.filter(p=>p.fbx).length,imgC=projects.filter(p=>p.image).length,cats=new Set(projects.map(p=>p.cat)).size;
+  document.getElementById('admStats').innerHTML=
+    `<div class="adm-stat"><div class="adm-stat-num">${projects.length}</div><div class="adm-stat-label">Total Projects</div></div>
+     <div class="adm-stat"><div class="adm-stat-num">${fbxC}<em>×</em></div><div class="adm-stat-label">FBX Models</div></div>
+     <div class="adm-stat"><div class="adm-stat-num">${imgC}</div><div class="adm-stat-label">Render Images</div></div>
+     <div class="adm-stat"><div class="adm-stat-num">${cats}</div><div class="adm-stat-label">Categories</div></div>`;
+  const recent=projects.slice(0,5);
+  document.getElementById('admRecentList').innerHTML=recent.length?admBuildTable(recent,true):`<div class="adm-empty"><div class="adm-empty-icon">◈</div><p class="adm-empty-text">No projects yet</p></div>`;
+}
+
+// Projects table
+function admRenderTable(){
+  document.getElementById('admTableWrap').innerHTML=projects.length?admBuildTable(projects,false):`<div class="adm-empty"><div class="adm-empty-icon">⬡</div><p class="adm-empty-text">No projects yet</p></div>`;
+}
+function admBuildTable(list,compact){
+  return`<table class="adm-table"><thead><tr><th style="width:64px">Thumb</th><th>Title</th><th>Category</th><th>Type</th>${!compact?'<th>Size</th>':''}<th>Actions</th></tr></thead><tbody>
+  ${list.map(p=>`<tr>
+    <td>${p.image?`<img class="adm-thumb" src="${p.image}" alt="">`:p.fbx?`<div class="adm-thumb-ph">⬡</div>`:`<div class="adm-thumb-ph">◈</div>`}</td>
+    <td><div class="adm-name-cell">${p.title}</div>${(p.tags||[]).slice(0,2).map(t=>`<span class="tag-pill">${t}</span>`).join('')}</td>
+    <td><span class="tag-pill cat">${p.cat}</span></td>
+    <td>${p.image?`<span class="tag-pill" style="border-color:rgba(201,168,76,.3);color:var(--gold)">IMG</span>`:''}${p.fbx?`<span class="tag-pill fbx">FBX</span>`:''}</td>
+    ${!compact?`<td><span class="tag-pill">${p.size||'normal'}</span></td>`:''}
+    <td><div class="row-acts"><button class="btn-adm sm" onclick="openEditModal(${p.id})">Edit</button><button class="btn-adm sm danger" onclick="askDelete(${p.id})">Delete</button></div></td>
+  </tr>`).join('')}
+  </tbody></table>`;
+}
+
+// Add project
+async function submitProject(){
+  const title=document.getElementById('a-title').value.trim();
+  if(!title){admShowToast('Please enter a title',true);return;}
+  const cfg=ghCfg();
+  if(!cfg.token){admShowToast('Set up GitHub Storage first',true);admPage('github',document.querySelectorAll('.adm-item')[5]);return;}
+  admShowToast('Uploading to GitHub…');
+  try{
+    const id=Date.now();
+    let imageUrl=null, fbxData=null;
+    if(admAddImg){
+      imageUrl=await ghUploadAsset(admAddImg,`img-${id}.jpg`,'images');
+    }
+    if(admAddFbx){
+      const fbxUrl=await ghUploadAsset(admAddFbx.dataUrl,`fbx-${id}.fbx`,'models');
+      fbxData={name:admAddFbx.name,url:fbxUrl};
+    }
+    const p={id,title,desc:document.getElementById('a-desc').value,cat:document.getElementById('a-cat').value,
+      size:document.getElementById('a-size').value,tags:document.getElementById('a-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+      image:imageUrl,fbx:fbxData};
+    projects.unshift(p);
+    await ghSaveProjectsMeta(projects);
+    renderProjects();resetAddForm();
+    admShowToast('Project published to portfolio');
+    admPage('projects',document.querySelectorAll('.adm-item')[1]);
+  }catch(e){admShowToast(e.message,true);}
+}
+function resetAddForm(){
+  ['a-title','a-desc','a-tags'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('a-size').value='normal';
+  const p=document.getElementById('a-imgPrev');p.src='';p.classList.remove('visible');
+  const f=document.getElementById('a-fbxName');f.textContent='';f.classList.remove('visible');
+  admAddImg=null;admAddFbx=null;
+}
+
+// Edit project
+function openEditModal(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  admEditImg=null;admEditFbx=null;
+  document.getElementById('e-id').value=p.id;
+  document.getElementById('e-title').value=p.title;
+  document.getElementById('e-cat').value=p.cat;
+  document.getElementById('e-size').value=p.size||'normal';
+  document.getElementById('e-desc').value=p.desc||'';
+  document.getElementById('e-tags').value=(p.tags||[]).join(', ');
+  const ep=document.getElementById('e-imgPrev');
+  if(p.image){ep.src=p.image;ep.classList.add('visible');}else{ep.src='';ep.classList.remove('visible');}
+  const ef=document.getElementById('e-fbxName');
+  if(p.fbx){ef.textContent='⬡ '+p.fbx.name+' (current)';ef.classList.add('visible');}else{ef.textContent='';ef.classList.remove('visible');}
+  document.getElementById('admEditBg').classList.add('open');
+}
+function closeEditModal(){document.getElementById('admEditBg').classList.remove('open');}
+async function saveEdit(){
+  const id=parseInt(document.getElementById('e-id').value),idx=projects.findIndex(x=>x.id===id);if(idx<0)return;
+  const p=projects[idx];
+  p.title=document.getElementById('e-title').value.trim()||p.title;
+  p.cat=document.getElementById('e-cat').value;p.size=document.getElementById('e-size').value;
+  p.desc=document.getElementById('e-desc').value;p.tags=document.getElementById('e-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  if(admEditImg)p.image=admEditImg;if(admEditFbx)p.fbx=admEditFbx;
+  await idbPut(p);
+  renderProjects();closeEditModal();admRenderTable();admShowToast('Project updated');
+}
+
+// Delete
+function askDelete(id){pendingDeleteId=id;document.getElementById('admConfirm').classList.add('open');}
+function closeAdmConfirm(){document.getElementById('admConfirm').classList.remove('open');pendingDeleteId=null;}
+async function confirmDelete(){
+  if(!pendingDeleteId)return;
+  await idbDelete(pendingDeleteId);
+  projects=projects.filter(p=>p.id!==pendingDeleteId);
+  renderProjects();closeAdmConfirm();admRenderTable();admUpdateDashboard();admShowToast('Project removed');
+}
+
+// Profile
+function admLoadProfile(){
+  document.getElementById('s-name').value=profile.name||'';document.getElementById('s-l1').value=profile.l1||'Two Minds';
+  document.getElementById('s-l2').value=profile.l2||'One Vision';document.getElementById('s-sub').value=profile.sub||'';
+  document.getElementById('s-bio').value=profile.bio||'';document.getElementById('s-skills').value=(profile.skills||[]).join(', ');
+  if(profile.avatar){const p=document.getElementById('s-avatarPrev');p.src=profile.avatar;p.classList.add('visible');}
+}
+function saveProfile(){
+  profile.name=document.getElementById('s-name').value;profile.l1=document.getElementById('s-l1').value;
+  profile.l2=document.getElementById('s-l2').value;profile.sub=document.getElementById('s-sub').value;
+  profile.bio=document.getElementById('s-bio').value;profile.skills=document.getElementById('s-skills').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(admAvatarData)profile.avatar=admAvatarData;
+  localStorage.setItem('rf3_profile',JSON.stringify(profile));
+  applyProfile();admShowToast('Profile saved');
+}
+
+// Contact
+function admLoadContact(){
+  document.getElementById('c-email').value=contact.email||'';
+  document.getElementById('c-ig').value=contact.instagram||'';
+}
+function saveContact(){
+  contact.email=document.getElementById('c-email').value;
+  contact.instagram=document.getElementById('c-ig').value;
+  localStorage.setItem('rf3_contact',JSON.stringify(contact));
+  applyContact();admShowToast('Contact info saved');
+}
+
+// File wiring
+function wireZone(zoneId,inputId,type,onLoad){
+  const z=document.getElementById(zoneId),inp=document.getElementById(inputId);
+  if(!z||!inp)return;
+  z.addEventListener('click',()=>{inp.value='';inp.click();});
+  inp.addEventListener('change',()=>{const f=inp.files[0];if(f)readF(f,type,onLoad);});
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('dragover');});
+  z.addEventListener('dragleave',()=>z.classList.remove('dragover'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('dragover');const f=e.dataTransfer.files[0];if(!f)return;if(type==='fbx'&&!f.name.toLowerCase().endsWith('.fbx'))return;if(type==='image'&&!f.type.startsWith('image/'))return;readF(f,type,onLoad);});
+}
+function readF(file,type,cb){const r=new FileReader();r.onload=e=>cb(e.target.result,file.name);r.readAsDataURL(file);}
+function setImgPrev(id,src){const e=document.getElementById(id);e.src=src;e.classList.add('visible');}
+
+function wireAllZones(){
+  wireZone('a-imgZone','a-imgInput','image',d=>{admAddImg=d;setImgPrev('a-imgPrev',d);});
+  wireZone('a-fbxZone','a-fbxInput','fbx',(d,n)=>{admAddFbx={name:n,dataUrl:d};const el=document.getElementById('a-fbxName');el.textContent='⬡ '+n;el.classList.add('visible');admShowToast('FBX ready: '+n);});
+  wireZone('e-imgZone','e-imgInput','image',d=>{admEditImg=d;setImgPrev('e-imgPrev',d);});
+  wireZone('e-fbxZone','e-fbxInput','fbx',(d,n)=>{admEditFbx={name:n,dataUrl:d};const el=document.getElementById('e-fbxName');el.textContent='⬡ '+n+' (new)';el.classList.add('visible');admShowToast('FBX ready: '+n);});
+  wireZone('s-avatarZone','s-avatarInput','image',d=>{admAvatarData=d;setImgPrev('s-avatarPrev',d);});
+}
+
+function admShowToast(msg,isErr){
+  const t=document.getElementById('admToast');
+  t.textContent=(isErr?'✕ ':'✦ ')+msg.toUpperCase();
+  t.className='adm-toast show'+(isErr?' err':'');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// Escape closes admin confirm/edit
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeAdmConfirm();closeEditModal();}
+});
+
+// ═══ START ═══
+init();
+wireAllZones();
+</script>
+</body>
+</html>
